@@ -1,0 +1,68 @@
+bootalk
+=======
+
+bootalkはLinux上で動作する日本語読み上げデーモンです。
+音声合成はAquesTalk2を利用しています。
+
+環境
+====
+Linux 32bit/64bit
+Linux ALSA
+Python 2.6
+UTF-8
+
+必要なもの
+==========
+* AquesTalk2
+  Linux 32bit/64bit版を環境に合わせて選択してください。
+  http://www.a-quest.com/download/index.html
+
+* aquestalk2 Pythonモジュール
+  http://github.com/kenboo/aquestalk2
+
+インストール
+============
+* AquesTalk2
+root権限でライブラリをインストールします。
+cp libAquesTalk2.so.1.0 /usr/lib
+ln -sf /usr/lib/libAquesTalk2.so.1.0 /usr/lib/libAquesTalk2.so.1
+ln -sf /usr/lib/libAquesTalk2.so.1 /usr/lib/libAquesTalk2.so
+/sbin/ldconfig -n /usr/lib
+
+* aquestalk2 Pythonモジュール
+easy_install aquestalk2.egg
+
+* bootalk
+easy_install bootalk.egg
+
+動作確認
+========
+ターミナルを二つ開きます。
+一つのターミナルでbootalkを起動します。
+$ bootalk
+
+もう一つのターミナルでnetcatを実行し、
+UTF-8でひらがなを入力します。Ctrl-Dで終了します。
+$ nc localhost 50002
+これわ、ごうせいおんせいです。
+
+音声が出れば成功です。
+
+ライセンス
+==========
+AquesTalk2の全ての権利は株式会社アクエストが所有しています。
+同梱のAquesTalk2ライブラリは非営利の個人利用に限り無償で使用
+できます。それ以外のご利用の場合はライセンスの購入が必要です。
+また、AquesTalk2ライブラリ単体での再配布はできません。
+詳細は次のURLを参照してください。
+http://www.a-quest.com/products/aquestalk2_licence.html
+
+bootalkはGPLに従います。
+
+
+連絡先
+======
+メール kenbooing@gmail.com
+ウェブ http://com.nicovideo.jp/community/co475423
+
+2010/09/23
