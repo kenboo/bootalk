@@ -4,6 +4,7 @@ import sys, wave, StringIO
 import aquestalk2
 import alsaaudio
 import SocketServer
+import MeCab
 
 # WAV file player
 def play(device, f):    
@@ -38,6 +39,7 @@ def play(device, f):
 class AquestalkHandler(SocketServer.StreamRequestHandler):
 
     def setup(self):
+        self.mecab = MeCab.Tagger('-Oyomi')
         self.device = alsaaudio.PCM(card='default')
         SocketServer.StreamRequestHandler.setup(self)
 
@@ -47,8 +49,16 @@ class AquestalkHandler(SocketServer.StreamRequestHandler):
             data = self.request.recv(8192)
             if len(data) == 0:
                 break
-            
-            wav = aquestalk2.synthe(data)
+            n = self.mecab.parseToNode(unicode(data, 'utf-8').encode('euc-jp'))
+            result = []
+            while n:
+                u = unicode(n.feature, 'euc-jp')
+                yomi = u.split(',')[5]
+                if yomi != '*':
+                    result.append(yomi)
+                n = n.next
+            hiragana = ''.join(result).encode('utf-8')
+            wav = aquestalk2.synthe(hiragana)
             f = wave.open(StringIO.StringIO(wav))
             play(self.device, f)
         self.request.close()

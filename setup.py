@@ -25,7 +25,9 @@ setup(
 	license='GPL',
 	scripts = ['bootalk.py'],
 	install_requires = [
-		'setuptools', 'pyalsaaudio', 'pyaquestalk2', 
+		'setuptools', 'pyalsaaudio',
+		# these two are required but not in the repository
+		# 'pyaquestalk2', 'mecab-python'
 	],
 	test_suite = 'nose.collector',
 )
