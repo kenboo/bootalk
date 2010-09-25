@@ -4,7 +4,7 @@ import sys, wave, StringIO
 import aquestalk2
 import aquestalk2.yahoo
 import alsaaudio
-import SocketServer
+import BaseHTTPServer, urllib
 import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -13,8 +13,8 @@ from optparse import OptionParser
 
 # WAV file player
 def play(device, f):    
-    log.debug('%d channels, %d sampling rate\n',
-              f.getnchannels(), f.getframerate())
+    #log.debug('%d channels, %d sampling rate\n',
+    #          f.getnchannels(), f.getframerate())
     # Set attributes
     device.setchannels(f.getnchannels())
     device.setrate(f.getframerate())
@@ -41,28 +41,54 @@ def play(device, f):
         data = f.readframes(320)
 
 # socket server handler
-class AquestalkHandler(SocketServer.StreamRequestHandler):
+class AquestalkHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def setup(self):
         self.device = alsaaudio.PCM(card='default')
-        SocketServer.StreamRequestHandler.setup(self)
+        BaseHTTPServer.BaseHTTPRequestHandler.setup(self)
 
-    def handle(self):
-        log.debug("connect from: %s", self.client_address)
-        while True:
-            data = self.request.recv(8192)
-            if len(data) == 0:
-                break
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+    def do_GET(self):
+        #log.debug("connect from: %s", self.client_address)
+        if not self.path.startswith('/say?'):
+            self.send_response(404)
+            self.end_headers()
+            return
+        try:
+            junk, data = self.path.split('?')
+            data = urllib.unquote_plus(data)
+            log.debug(data)
             phonetic = aquestalk2.yahoo.to_phonetic(data)
             log.debug(phonetic)
-            try:
-                wav = aquestalk2.synthe(phonetic)
-                f = wave.open(StringIO.StringIO(wav))
-                play(self.device, f)
-            except Exception, e:
-                dummy, v =  str(e).split(' ')
-                log.warn(aquestalk2.error_code.get(int(v)) or 'Unknown error %s' % v)
-        self.request.close()
+        except:
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write("<html><head><title>Bootalk</title></head>")
+            self.wfile.write("<body>bad input. UTF8 please</body></html>")
+            return
+
+        try:
+            wav = aquestalk2.synthe(phonetic)
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write("<html><head><title>Bootalk</title></head>")
+            self.wfile.write("<body>%s</body></html>" % phonetic)
+            f = wave.open(StringIO.StringIO(wav))
+            play(self.device, f)
+        except Exception, e:
+            dummy, v =  str(e).split(' ')
+            err = aquestalk2.error_code.get(int(v)) or 'Unknown error %s' % v
+            log.warn(err)
+            self.send_response(500)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write("<html><head><title>Bootalk</title></head>")
+            self.wfile.write("<body>%s</body></html>" % err)
 
 def main():
     parser = OptionParser()
@@ -78,10 +104,14 @@ def main():
     if options.verbose:
         log.setLevel(logging.DEBUG)
 
-    server = SocketServer.ThreadingTCPServer(('', options.port),
-                                             AquestalkHandler)
+    server = BaseHTTPServer.HTTPServer(('', options.port),
+                                       AquestalkHandler)
     log.info('listening: %s', server.socket.getsockname())
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    server.server_close()
 
 if __name__ == '__main__':
     main()
