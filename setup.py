@@ -4,7 +4,7 @@ from setuptools import setup, find_packages, Extension
 
 setup(
 	name='bootalk',
-	version='1.0.0',
+	version='1.1.0',
 	description='Japanese text reader daemon',
 	author='kenboo',
 	author_email='kenbooing@gmail.com',
